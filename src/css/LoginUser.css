@@ -1,0 +1,109 @@
+/* GetUsers Component Styling */
+.get-users-container {
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 30px;
+    background: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    position: relative;
+}
+
+.get-users-container h1 {
+    text-align: center;
+    margin-bottom: 30px;
+    font-size: 1.75rem;
+    font-weight: 500;
+    color: #1e3a8a;
+    letter-spacing: 0.5px;
+}
+
+/* System button styling */
+.system-button.admin {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    padding: 8px 16px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #fff;
+    background-color: #0284c7;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.system-button.admin:hover {
+    background-color: #0369a1;
+    transform: translateY(-1px);
+}
+
+.system-button.admin:active {
+    transform: translateY(1px);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* User buttons grid */
+.user-buttons-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.user-button {
+    padding: 15px;
+    font-size: 1rem;
+    font-weight: 500;
+    color: #334155;
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+}
+
+.user-button:hover {
+    background-color: #f1f5f9;
+    border-color: #cbd5e1;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.user-button:active {
+    transform: translateY(1px);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Loading state */
+.loading-text {
+    text-align: center;
+    font-size: 1rem;
+    color: #64748b;
+    margin-top: 30px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .get-users-container {
+        max-width: 95%;
+        padding: 20px;
+    }
+    
+    .user-buttons-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 10px;
+    }
+    
+    .system-button.admin {
+        position: relative;
+        top: 0;
+        right: 0;
+        display: block;
+        width: 100%;
+        margin-bottom: 20px;
+    }
+}

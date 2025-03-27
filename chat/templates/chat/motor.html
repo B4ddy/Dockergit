@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+{% load static%}
+<html>
+<head>
+    <title>Motor Control</title>
+</head>
+<body>
+    <h1>Motor Control</h1>
+    <p>Voltage Logic: <span id="voltage_logic"></span></p>
+    <p>Voltage Power Supply: <span id="voltage_powersupply"></span></p>
+    <p>Phase Current: <span id="phase_current"></span></p>
+    <p>Actual Velocity: <span id="actualvelocity"></span></p>
+
+    <button onclick="sendCommand('velocity_mode')">Velocity Mode</button>
+    <button id=power_off>Stop</button>
+    <button onclick="sendCommand('f')">Forward</button>
+    <button onclick="sendCommand('r')">Reverse</button>
+    <button id="power_on" >Power an</button>
+    <button id="quick" >Quick start</button>
+
+    <label for="velocity">Set Velocity:</label>
+    <input type="number" id="velocity" name="velocity" value= "0" min="0" max="3000">
+    <button onclick="setVelocity()">Set</button>
+
+    <label for="current">Set Current:</label>
+    <input type="number" id="current" name="current">
+    <button onclick="setCurrent()">Set</button>
+
+    <script type="text/javascript" src="{% static 'js/motor.js' %}"></script>
+</body>
+</html>

@@ -1,0 +1,288 @@
+:root {
+  --primary: #2c3e50;
+  --secondary: #34495e;
+  --accent: #3498db;
+  --bg: #ffffff;
+  --text: #2c3e50;
+  --danger: #e74c3c;
+  --success: #2ecc71;
+  --radius: 0px;
+  --shadow: 0 2px 3px rgba(0,0,0,0.1);
+ 
+}
+
+.motor-control-dashboard {
+  font-family: 'Inter', sans-serif;
+  color: var(--text);
+  margin: 0 auto;
+
+}
+
+.dashboard-header {
+  background: var(--primary);
+  color: white;
+  padding: 10px 12px;
+  border-radius: 0%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: min-content;
+  
+}
+
+#bootbuddne {
+  height: 10px;
+  width: 10px;
+  background-color: #0b253f;
+}
+
+.dashboard-header h1 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.user-connection-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.connection-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.connection-indicator.connected .status-dot {
+  background-color: var(--success);
+}
+
+.connection-indicator.disconnected .status-dot {
+  background-color: var(--danger);
+}
+
+.dashboard-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 3px;
+}
+
+.metrics-panel {
+  grid-column: 1 / span 3;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 3px;
+  padding-top: 6px;
+}
+div.metric-card {
+  background: white;
+  border-radius: var(--radius);
+  text-align: center;
+  box-shadow: var(--shadow);
+  padding: 1px;
+}
+
+.metric-card {
+  background: white;
+  border-radius: var(--radius);
+  text-align: center;
+  box-shadow: var(--shadow);
+  padding: 0px;
+}
+
+.metric-title {
+  font-size: 0.8rem;
+  color: var(--secondary);
+
+  font-weight: 600;
+}
+
+.metric-value {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.control-panel {
+  grid-column: 1 / span 3;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.control-section {
+  background: white;
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow);
+  display: flex;
+
+  /* Positioning for bottom stickiness */
+  position: fixed;
+  bottom: 0;
+  left: 0;  /* Or right: 0;  or  width: 100%; if you want it full width */
+  width: 100%; /* Or specific width */
+  z-index: 1000; /* Ensure it's above other content */
+}
+
+
+.button-group {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+button
+{
+  background-color: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 8px 12px;
+  transition: background-color 0.3s;
+}
+
+.control-button {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.3s;
+}
+
+.control-button.primary {
+  background-color: var(--accent);
+  color: #3498db;
+}
+
+.control-button.danger {
+  background-color: var(--danger);
+  color: white;
+}
+
+.control-button.active {
+  
+  background-color: var(--secondary);
+  background-color: #164666;
+}
+
+.slider-control {
+  
+  margin-left: 16px;
+  width: 75%;
+  
+}
+
+.slider-header {
+  display: flex;
+  
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+}
+
+.slider-with-buttons {
+  display: flex;
+  align-items: center;
+  /* width: 100%; This will make the slider as long as possible in the container */
+}
+
+.slider-with-buttons input[type="range"] {
+  flex-grow: 1; /* Important: This makes the slider take up all available space */
+  margin: 0 8px;
+  width: 100%; /* Ensures it fills the flex-grow space */
+}
+
+.decrement,
+.increment {
+  width: 24px;
+  height: 24px;
+  border: none;
+  background-color: var(--bg);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.visualization-panel {
+  background: white;
+  border-radius: var(--radius);
+  padding: 0px;
+  
+  grid-column: 1 / span 3; /* This is the important line */
+}
+
+.motion-container {
+  display: flex;
+  
+  border: 1px dashed var(--bg);
+  border-radius: var(--radius);
+  
+}
+
+.user-management-container {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.system-button {
+
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.3s;
+}
+
+.system-button.user {
+  background-color: var(--secondary);
+  color: white;
+}
+
+.system-button.logout {
+  background-color: var(--danger);
+  color: white;
+  grid-column: 1 / span 2;
+}
+
+.system-button.session {
+  background-color: var(--accent);
+  color: white;
+}
+
+#sessiondiv button {
+  margin: 5px 5px 5px 0;
+}
+
+
+
+#motion {
+    max-width: 30px;
+}
+#session-visualizer {
+  width: 100%;
+}
+
+body {
+  background-color: white;
+  margin: 0;
+  padding: 0;
+  border-radius: 0px;
+  min-height: 100vh;
+  margin-bottom: 0px;
+  
+}
+html {
+  border-radius: 0%;
+ 
+}
+
