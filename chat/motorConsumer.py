@@ -46,10 +46,10 @@ class MotorConsumer(AsyncWebsocketConsumer):
         # Start background tasks
         asyncio.create_task(self.monitor.listen_for_motor_responses())
         asyncio.create_task(self.monitor.send_motor_parameter_requests(
-           self.monitor.motor_values, 0.3))
+           self.monitor.motor_values, 0.3))                                
         asyncio.create_task(self.monitor.send_motor_parameter_requests(
-            self.monitor.motor_values_important, 0.02))
-        self.currentvalues=self.monitor.motor_registers
+            self.monitor.motor_values_important, 0.08))  
+        self.currentvalues=self.monitor.motor_registers             # how many packets per second?   1/0.3 =3.33 P/s   + 1/0.07 = 14.2857 P/s 14.2857+3.33 = 17.6157 P/s     Der Motor kriegt jede Sekun
 
         # Accept the websocket connection
         await self.accept()

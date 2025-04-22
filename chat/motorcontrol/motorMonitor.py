@@ -25,8 +25,8 @@ class MotorMonitor:
         self.motor_values = {
             "voltage_logic": "411001",
             "actual_velocity": "4a0402",
-          #  "temp_com_card": "411403",
             "temp_power_stage": "411401",
+          #  "temp_com_card": "411403",
           #  "torqueconstant": "490106",
             
                  
@@ -35,7 +35,7 @@ class MotorMonitor:
         self.motor_values_important = {
         #   "filtered_current":"426202",
              "phase_current": "426201",
-            "actual_position": "476201",
+             "actual_position": "476201",
             
         }
         self.all_motor_values = {
@@ -50,7 +50,7 @@ class MotorMonitor:
             "476201", "426201", "4a0402", "411403","411401","411001"
         }
         self.db_write_interval = 20 
-        self.data_buffer = deque(maxlen=5000) 
+        self.data_buffer = deque(maxlen=500) 
         
         # Cache for user and session objects
         self.user_cache = None
@@ -60,7 +60,7 @@ class MotorMonitor:
         
         # New: Track when to send batched data to websocket
         self.last_websocket_send_time = time.time()
-        self.websocket_send_interval = 0.05  # Send every 20ms
+        self.websocket_send_interval = 0.03  # Send every 20ms
         self.tag_for_db = False 
 
 
@@ -73,7 +73,10 @@ class MotorMonitor:
         try:
             loop = asyncio.get_event_loop()
             last_db_write_time = time.time()
-
+            phase_current_address = self.all_motor_values.get("phase_current")
+            actualvelocity_address = self.all_motor_values.get("actual_velocity")
+            actualposition_address = self.all_motor_values.get("actual_position")
+            filtered_current_adress = self.all_motor_values.get("filtered_current")
             while not self.stop_event.is_set():
                 # Run blocking recvfrom in a thread (UDP connectionless)
                 data, addr = await loop.run_in_executor(None, self.socket_manager.receive, 2048)
@@ -89,10 +92,7 @@ class MotorMonitor:
 
                 if len(response_hex) > 38:
                     value_hex = response_hex[38:]
-                    phase_current_address = self.all_motor_values.get("phase_current")
-                    actualvelocity_address = self.all_motor_values.get("actual_velocity")
-                    actualposition_address = self.all_motor_values.get("actual_position")
-                    filtered_current_adress = self.all_motor_values.get("filtered_current")
+                   
 
                     # Convert hex to int, handling signed values for specific addresses
                     if address in [phase_current_address, actualvelocity_address, actualposition_address,filtered_current_adress] and address is not None:

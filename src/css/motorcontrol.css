@@ -8,7 +8,84 @@
   --success: #2ecc71;
   --radius: 0px;
   --shadow: 0 2px 3px rgba(0,0,0,0.1);
- 
+}
+
+/* Custom Range Slider Styling */
+.slider-with-buttons input[type="range"] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 8px;
+  background: var(--secondary);
+  outline: none;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+  border-radius: 4px;
+}
+
+.slider-with-buttons input[type="range"]:hover {
+  opacity: 1;
+}
+
+/* Webkit (Chrome, Safari, newer versions of Opera) */
+.slider-with-buttons input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: var(--accent);
+  cursor: pointer;
+  border-radius: 50%;
+  transition: background 0.15s ease-in-out;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.slider-with-buttons input[type="range"]::-webkit-slider-thumb:hover {
+  background: var(--primary);
+}
+
+/* Firefox */
+.slider-with-buttons input[type="range"]::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: var(--accent);
+  cursor: pointer;
+  border-radius: 50%;
+  border: none;
+  transition: background 0.15s ease-in-out;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.slider-with-buttons input[type="range"]::-moz-range-thumb:hover {
+  background: var(--primary);
+}
+
+/* Disabled Slider Styling */
+.slider-with-buttons input[type="range"]:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.slider-with-buttons input[type="range"]:disabled::-webkit-slider-thumb {
+  background: var(--secondary);
+  cursor: not-allowed;
+}
+
+.slider-with-buttons input[type="range"]:disabled::-moz-range-thumb {
+  background: var(--secondary);
+  cursor: not-allowed;
+}
+
+/* Focus States */
+.slider-with-buttons input[type="range"]:focus {
+  outline: none;
+}
+
+.slider-with-buttons input[type="range"]:focus::-webkit-slider-thumb {
+  box-shadow: 0 0 0 4px rgba(52, 152, 219, 0.4);
+}
+
+.slider-with-buttons input[type="range"]:focus::-moz-range-thumb {
+  box-shadow: 0 0 0 4px rgba(52, 152, 219, 0.4);
 }
 
 .motor-control-dashboard {
@@ -122,6 +199,7 @@ div.metric-card {
   padding: 16px;
   box-shadow: var(--shadow);
   display: flex;
+  align-items: center;
 
   /* Positioning for bottom stickiness */
   position: fixed;
@@ -179,6 +257,7 @@ button
   
   margin-left: 16px;
   width: 75%;
+  margin-bottom: 15px;
   
 }
 
@@ -193,6 +272,7 @@ button
 .slider-with-buttons {
   display: flex;
   align-items: center;
+  gap:105px;
   /* width: 100%; This will make the slider as long as possible in the container */
 }
 
@@ -202,12 +282,14 @@ button
   width: 100%; /* Ensures it fills the flex-grow space */
 }
 
+
+
 .decrement,
 .increment {
-  width: 24px;
-  height: 24px;
+  width: 50px;
+  height: 50px;
   border: none;
-  background-color: var(--bg);
+  background-color: var(--primary);
   border-radius: 50%;
   cursor: pointer;
 }

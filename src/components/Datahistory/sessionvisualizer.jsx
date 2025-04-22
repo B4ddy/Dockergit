@@ -5,14 +5,25 @@ import useWebSocket from "react-use-websocket";
 import Slider from "rc-slider";
 import 'rc-slider/assets/index.css';
 
+// Advanced sampling technique for large datasets
+const sampleData = (data, maxPoints = 2000) => {
+  if (data.length <= maxPoints) return data;
+
+  const step = Math.floor(data.length / maxPoints);
+  return data.filter((_, index) => index % step === 0);
+};
+
 // Optimized Smoothing utility functions
 const applyRollingMeanOptimized = (data, window) => {
-  const result = Array(data.length).fill(null);
+  const result = new Float64Array(data.length);
+  const buffer = new Float64Array(data.length);
+  buffer.set(data);
+
   let sum = 0;
   for (let i = 0; i < data.length; i++) {
-    sum += data[i];
+    sum += buffer[i];
     if (i >= window) {
-      sum -= data[i - window];
+      sum -= buffer[i - window];
     }
     if (i >= window - 1) {
       result[i] = sum / window;
@@ -21,76 +32,8 @@ const applyRollingMeanOptimized = (data, window) => {
   return result;
 };
 
-const applyEMAOptimized = (data, alpha) => {
-  const result = Array(data.length).fill(null);
-  let ema = data[0];
-  result[0] = ema;
-  for (let i = 1; i < data.length; i++) {
-    ema = alpha * data[i] + (1 - alpha) * ema;
-    result[i] = ema;
-  }
-  return result;
-};
-
-const applyMedianFilterOptimized = (data, size) => {
-  const result = Array(data.length).fill(null);
-  const halfSize = Math.floor(size / 2);
-
-  for (let i = 0; i < data.length; i++) {
-    const windowStart = Math.max(0, i - halfSize);
-    const windowEnd = Math.min(data.length, i + halfSize + 1);
-    const windowSlice = data.slice(windowStart, windowEnd);
-    const sorted = [...windowSlice].sort((a, b) => a - b);
-    result[i] = sorted[Math.floor(sorted.length / 2)];
-  }
-  return result;
-};
-
-const applySavgolFilterOptimized = (data, windowLength, polyOrder) => {
-    if (windowLength % 2 === 0 || windowLength > data.length || polyOrder >= windowLength) {
-        console.error("Invalid Savitzky-Golay parameters");
-        return Array(data.length).fill(null);
-    }
-
-    const result = Array(data.length).fill(null);
-    const halfWindow = Math.floor(windowLength / 2);
-
-    // Precompute weights (Example: Triangular weights for simplicity)
-    const weights = Array(windowLength).fill(0);
-    const center = Math.floor(windowLength / 2);
-    let weightSum = 0;
-    for (let i = 0; i < windowLength; i++) {
-        weights[i] = 1 - Math.abs(i - center) / halfWindow;
-        weightSum += weights[i];
-    }
-
-    // Normalize weights
-    const normalizedWeights = weights.map(w => w / weightSum);
-
-    for (let i = 0; i < data.length; i++) {
-        let weightedSum = 0;
-        let count = 0;  // Count valid data points in the window
-        for (let j = 0; j < windowLength; j++) {
-            const dataIndex = i - halfWindow + j;
-            if (dataIndex >= 0 && dataIndex < data.length) {
-                weightedSum += data[dataIndex] * normalizedWeights[j];
-                count++;
-            }
-        }
-
-        // Handle edge cases where the window is incomplete
-        if (count > 0) {
-            result[i] = weightedSum;
-        } else {
-            result[i] = null;  // Or handle differently based on your needs
-        }
-    }
-
-    return result;
-};
-
 // Main component
-const SessionVisualizer = ({ sessionid, is_active }) => {
+const SessionVisualizer = ({ sessionid, is_active, maxDataPoints = 10000 }) => {
   const [data, setData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const dataInitializedRef = useRef(false);
@@ -98,45 +41,37 @@ const SessionVisualizer = ({ sessionid, is_active }) => {
     actual_position: true,
     actual_velocity: true,
     phase_current: false,
-    phase_current_rolling_mean_large: false,
-    phase_current_ema_low: true,
-    phase_current_savgol_large: false,
-    phase_current_median_large: false,
-    phase_current_cascaded: false,
-    phase_current_hybrid: false,
+    phase_current_rolling_mean_large: true,
     voltage_logic: false,
   });
+  
   const colors = {
     actual_position: "#4361EE",
     actual_velocity: "#3A0CA3",
     phase_current: "#F72585",
     phase_current_rolling_mean_large: "#FF9E00",
-    phase_current_ema_low: "#7209B7",
-    phase_current_savgol_large: "#4CC9F0",
-    phase_current_median_large: "#38B000",
-    phase_current_cascaded: "#FB5607",
-    phase_current_hybrid: "#023047",
     voltage_logic: "#4CC9F0"
   };
+  
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
   const containerRef = useRef(null);
   const [zoomStart, setZoomStart] = useState(55);
   const [zoomEnd, setZoomEnd] = useState(100);
 
+  // Performance tracking
+  const performanceRef = useRef({
+    lastProcessingTime: 0,
+    dataProcessingCount: 0
+  });
+
   // Smoothing parameters
   const [smoothingParams, setSmoothingParams] = useState({
-    rolling: { window: 15 },
-    ema: { alpha: 0.05 },
-    savgol: { windowLength: 15, polyOrder: 2 },
-    median: { window: 5 },
-    cascade: { window: 5, alpha: 0.2 },
-    hybrid: { medianWindow: 3, savgolWindow: 7, polyOrder: 3 }
+    rolling: { window: 15 }
   });
 
   const formatTime = (timeString) => {
-    let time = (timeString.time);
-    return time;
+    return timeString.time || '';
   };
 
   // Use useCallback to memoize the toggle function
@@ -144,41 +79,34 @@ const SessionVisualizer = ({ sessionid, is_active }) => {
     setSelectedMetrics(prev => ({ ...prev, [metric]: !prev[metric] }));
   }, []);
 
-  // Process data with smoothing algorithms
+  // Process data with advanced sampling and smoothing
   const processedData = useMemo(() => {
+    const startTime = performance.now();
+    
+    // Early return if no data
     if (!data.length) return [];
 
-    const result = [...data];
+    // Sample data for better performance
+    const sampledData = sampleData(data, 2000);
 
-    // Extract phase current values
-    const phaseCurrentValues = data.map(item => item.phase_current || 0);
+    // Extract phase current values efficiently
+    const phaseCurrentValues = sampledData.map(item => item.phase_current || 0);
 
-    // Apply different smoothing techniques with optimized functions
-    const rollingMeanLarge = applyRollingMeanOptimized(phaseCurrentValues, smoothingParams.rolling.window);
-    const emaLow = applyEMAOptimized(phaseCurrentValues, smoothingParams.ema.alpha);
-    const savgolLarge = applySavgolFilterOptimized(phaseCurrentValues, smoothingParams.savgol.windowLength, smoothingParams.savgol.polyOrder);
-    const medianLarge = applyMedianFilterOptimized(phaseCurrentValues, smoothingParams.median.window);
+    // Apply optimized smoothing
+    const rollingMeanLarge = applyRollingMeanOptimized(
+      phaseCurrentValues, 
+      smoothingParams.rolling.window
+    );
 
-    // Cascaded: Rolling Average -> EMA
-    const rollingCascade = applyRollingMeanOptimized(phaseCurrentValues, smoothingParams.cascade.window);
-    const cascaded = applyEMAOptimized(rollingCascade, smoothingParams.cascade.alpha);
+    // Add smoothed values
+    const result = sampledData.map((item, index) => ({
+      ...item,
+      phase_current_rolling_mean_large: rollingMeanLarge[index] || 0
+    }));
 
-    // Hybrid: Median Filter -> Savitzky-Golay
-    const medianHybrid = applyMedianFilterOptimized(phaseCurrentValues, smoothingParams.hybrid.medianWindow);
-    const hybrid = applySavgolFilterOptimized(medianHybrid, smoothingParams.hybrid.savgolWindow, smoothingParams.hybrid.polyOrder);
-
-    // Add smoothed values to the data
-    for (let i = 0; i < result.length; i++) {
-      result[i] = {
-        ...result[i],
-        phase_current_rolling_mean_large: rollingMeanLarge[i],
-        phase_current_ema_low: emaLow[i],
-        phase_current_savgol_large: savgolLarge[i],
-        phase_current_median_large: medianLarge[i],
-        phase_current_cascaded: cascaded[i],
-        phase_current_hybrid: hybrid[i]
-      };
-    }
+    const processingTime = performance.now() - startTime;
+    performanceRef.current.lastProcessingTime = processingTime;
+    performanceRef.current.dataProcessingCount++;
 
     return result;
   }, [data, smoothingParams]);
@@ -203,8 +131,11 @@ const SessionVisualizer = ({ sessionid, is_active }) => {
         }
         const response = await axiosInstance.get(`get_session_data/${sessionid}`);
         if (!Array.isArray(response.data)) throw new Error("Invalid data format");
-        setData([...response.data]);
-        console.log("Data Fetched:", response.data);
+        
+        // Limit initial data points
+        const limitedData = response.data.slice(-maxDataPoints);
+        setData(limitedData);
+        console.log("Data Fetched:", limitedData);
         dataInitializedRef.current = true;
       } catch (error) {
         console.error("Fetch Error:", error);
@@ -214,9 +145,9 @@ const SessionVisualizer = ({ sessionid, is_active }) => {
     };
 
     fetchData();
-  }, [sessionid]);
+  }, [sessionid, maxDataPoints]);
 
-  // Initialize and update chart
+  // Initialize and update chart with performance optimizations
   useEffect(() => {
     if (!chartRef.current || isLoading) return;
 
@@ -226,14 +157,16 @@ const SessionVisualizer = ({ sessionid, is_active }) => {
     }
 
     if (processedData.length > 0) {
-      chartInstance.current = echarts.init(chartRef.current);
+      chartInstance.current = echarts.init(chartRef.current, null, {
+        renderer: 'canvas'  // Explicitly set canvas renderer
+      });
 
       const timeData = processedData.map(formatTime);
 
       const series = Object.entries(selectedMetrics)
         .filter(([, selected]) => selected)
         .map(([metric]) => ({
-          name: metric.replace(/_/g, ' '), // Replace underscores with spaces for display
+          name: metric.replace(/_/g, ' '),
           type: 'line',
           smooth: false,
           data: processedData.map(item => item[metric] || 0),
@@ -243,12 +176,14 @@ const SessionVisualizer = ({ sessionid, is_active }) => {
         }));
 
       const option = {
+        // Performance optimization settings
         progressive: 1000,          // Enable progressive rendering
         progressiveThreshold: 5000, // Threshold to trigger progressive rendering
         animation: false,           // Disable animations for better performance
         large: true,                // Enable large dataset optimization
         largeThreshold: 2000,       // Threshold to enable large mode
-        sampling: 'lttb',
+        sampling: 'lttb',           // Largest-Triangle-Three-Buckets sampling
+        
         grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
         tooltip: {
           trigger: 'axis',
@@ -257,9 +192,29 @@ const SessionVisualizer = ({ sessionid, is_active }) => {
             return `Time: ${params[0].axisValue}<br>${params.map(p => `${p.seriesName}: ${p.value.toFixed(4)}<br>`).join('')}`;
           }
         },
-        xAxis: { type: 'category', data: timeData, axisLabel: { fontSize: 12, color: '#666' } },
-        dataZoom: [{ type: 'inside', zoomLock: false, start: zoomStart, end: zoomEnd, zoomOnMouseWheel: true }],
-        yAxis: { type: 'value', axisLabel: { fontSize: 12, color: '#666' } },
+        xAxis: { 
+          type: 'category', 
+          data: timeData, 
+          axisLabel: { 
+            fontSize: 12, 
+            color: '#666',
+            interval: 'auto'  // Optimize label rendering
+          } 
+        },
+        dataZoom: [{ 
+          type: 'inside', 
+          zoomLock: false, 
+          start: zoomStart, 
+          end: zoomEnd, 
+          zoomOnMouseWheel: true 
+        }],
+        yAxis: { 
+          type: 'value', 
+          axisLabel: { 
+            fontSize: 12, 
+            color: '#666' 
+          } 
+        },
         series: series,
         color: Object.values(colors),
         legend: {
@@ -270,18 +225,17 @@ const SessionVisualizer = ({ sessionid, is_active }) => {
           textStyle: { fontSize: 12 },
           formatter: (name) => {
             // Shorten long names
-            if (name.length > 20) {
-              return name.substring(0, 18) + '...';
-            }
-            return name;
+            return name.length > 20 ? name.substring(0, 18) + '...' : name;
           }
-        },
-        animation: false
+        }
       };
 
       // Use try-catch to handle potential errors in chart updates
       try {
-        chartInstance.current.setOption(option);
+        chartInstance.current.setOption(option, {
+          notMerge: true,  // Create a new chart instead of merging
+          lazyUpdate: true // Lazy update for better performance
+        });
       } catch (error) {
         console.error("Chart update error:", error);
         // If there's an error, try to dispose and reinitialize
@@ -339,7 +293,11 @@ const SessionVisualizer = ({ sessionid, is_active }) => {
           };
 
           if (dataInitializedRef.current) {
-            setData(prev => [...prev, formattedData]);
+            // Limit total data points
+            setData(prevData => {
+              const updatedData = [...prevData, formattedData];
+              return updatedData.slice(-maxDataPoints);
+            });
           }
         } catch (error) {
           console.error('WS Data Error:', error);
@@ -360,21 +318,33 @@ const SessionVisualizer = ({ sessionid, is_active }) => {
     }
   }, [zoomStart, zoomEnd]);
 
+  // Performance information display
+  const renderPerformanceInfo = () => {
+    const { lastProcessingTime, dataProcessingCount } = performanceRef.current;
+    return (
+      <div style={{ 
+        fontSize: '10px', 
+        color: '#666', 
+        padding: '5px',
+        backgroundColor: '#f4f4f4',
+        borderRadius: '4px',
+        margin: '5px 0'
+      }}>
+        Last Data Processing: {lastProcessingTime.toFixed(2)}ms
+        | Total Processes: {dataProcessingCount}
+      </div>
+    );
+  };
+
   // Group metrics by categories for better organization
   const metricGroups = {
-    "Original Data": ["actual_position", "actual_velocity", "phase_current", "voltage_logic",],
-    "Smoothed Phase Current": [
-      "phase_current_rolling_mean_large",
-      "phase_current_ema_low",
-      "phase_current_savgol_large",
-      "phase_current_median_large",
-      "phase_current_cascaded",
-      "phase_current_hybrid"
-    ]
+    "Original Data": ["actual_position", "actual_velocity", "phase_current", "voltage_logic"],
+    "Smoothed Phase Current": ["phase_current_rolling_mean_large"]
   };
 
   return (
     <div className="container">
+      {renderPerformanceInfo()}
       {isLoading ? (
         <div className="loading-indicator"><p>Loading...</p></div>
       ) : (
@@ -432,7 +402,7 @@ const SessionVisualizer = ({ sessionid, is_active }) => {
                 className="chart-wrapper"
                 style={{
                   width: '100%',
-                  height: 400, // Increased height for better visibility
+                  height: 400,
                   overflowX: 'auto',
                   cursor: 'grab',
                   overflowY: 'hidden',
@@ -478,4 +448,4 @@ const SessionVisualizer = ({ sessionid, is_active }) => {
   );
 };
 
-export default SessionVisualizer;
+export default React.memo(SessionVisualizer);

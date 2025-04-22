@@ -84,7 +84,7 @@ const MotorControl = () => {
 
     const sendCommand = (command) => {
         sendMessage(JSON.stringify({ type: 'command', command }));
-        setActiveMode(command === 'velocity_mode' ? 'velocity' : command === 'current_mode' ? 'current' : command === 'f' ? 'forward' : command === 'r' ? 'reverse' : null);
+        setActiveMode(command === 'velocity_mode' ? 'velocity' : command === 'current_mode' ? 'current'  : null);
     };
 
     const sendCustomType = (type, message) => { sendMessage(JSON.stringify({ type: type, message })); }
@@ -165,10 +165,16 @@ const MotorControl = () => {
         setTripleToggleValue(value); // Update the state with the current toggle value
         switch (value) {
             case "left":
+                sendMessage(JSON.stringify({ type: 'set_velocity', velocity: 0 }));
+                setTargetVelocity(0); // Reset actual velocity to 0 when switching to left mode
                 sendCommand("velocity_mode");
+                
+
                 break;
             case "right":
+                sendMessage(JSON.stringify({ type: 'set_current', current: 0 }));
                 sendCommand("current_mode");
+                setTargetCurrent(0); // Reset actual current to 0 when switching to right mode
                 break;
             case "center":
                 sendCommand("x");
@@ -265,7 +271,7 @@ const MotorControl = () => {
                                     <button className="decrement" onClick={() => { const newVelocity = Math.max(-5000, targetVelocity - 100); setTargetVelocity(newVelocity); sendMessage(JSON.stringify({ type: 'set_velocity', velocity: newVelocity })); }}> − </button>
 
 
-                                    <input type="range" id="velocity" name="velocity" value={targetVelocity} list="ticks" min="-5000" max="5000" step={5} onChange={(e) => { const newVelocity = parseInt(e.target.value); setTargetVelocity(newVelocity); sendMessage(JSON.stringify({ type: 'set_velocity', velocity: newVelocity })); }} />
+                                    <input type="range" id="velocity" name="velocity" value={targetVelocity} list="ticks" min="-2500" max="2500" step={5} onChange={(e) => { const newVelocity = parseInt(e.target.value); setTargetVelocity(newVelocity); sendMessage(JSON.stringify({ type: 'set_velocity', velocity: newVelocity })); }} />
 
                                     <button className="increment" onClick={() => { const newVelocity = Math.min(5000, targetVelocity + 100); setTargetVelocity(newVelocity); sendMessage(JSON.stringify({ type: 'set_velocity', velocity: newVelocity })); }}> + </button>
                                 </div>
@@ -275,7 +281,7 @@ const MotorControl = () => {
                         {tripleToggleValue === "right" && (
                             <div className="slider-control">
                                 <div className="slider-header">
-                                    <label htmlFor="current">Current</label>
+                                    <label htmlFor="current">Current</label> 
                                     <output id="current-output">{targetCurrent}</output>
                                 </div>
                                 <div className="slider-with-buttons">
